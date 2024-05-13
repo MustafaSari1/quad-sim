@@ -6,6 +6,7 @@ from QuadCopter import QuadCopter
 from parameters import *
 
 time_now = 0
+step_time = 0
 connected = False
 
 quad = QuadCopter()
@@ -21,12 +22,14 @@ def init():
 # Calculate the new state of the physics
 # Return timestamp, gyro(angular vel), accel, position, attitude, velocity
 def calculate_new_state(pwm_values):
+    global step_time
     global time_now
     time_now += DT
 
     rotor_velocities = pwm_values[0:4]
 
-    gyro_body_rad_s, accel_body_m_ss, position_m, attitude_rad, velocity_m_s = quad.step(rotor_velocities)
+    print(rotor_velocities)
+    gyro_body_rad_s, accel_body_m_ss, position_m, attitude_rad, velocity_m_s = quad.step(rotor_velocities, step_time)
     
     return time_now, gyro_body_rad_s, accel_body_m_ss, position_m, attitude_rad, velocity_m_s
 
@@ -104,25 +107,26 @@ while True:
     # Convert outputs to JSON
     IMU_format = {
         "gyro": [gyro[0][0], gyro[1][0], gyro[2][0]],
-        "accel_body": [accel[0][0], accel[1][0], accel[2][0]]
+        "accel_body": [accel[0][0], accel[1][0], -accel[2][0] - GRAVITY_M_S2]
     }
 
     JSON_format = {
         "timestamp": physics_time_s,
         "imu": IMU_format,
-        "position": [pos[0][0], pos[1][0], pos[2][0]],
+        "position": [pos[0][0], pos[1][0], -pos[2][0]],
         "attitude": [att[0][0], att[1][0], att[2][0]],
-        "velocity": [vel[0][0], vel[1][0], vel[2][0]]
+        "velocity": [vel[0][0], vel[1][0], -vel[2][0]]
     }
 
     JSON_string = "\n" + json.dumps(JSON_format, separators=(',', ':')) + "\n"
+    print(JSON_string)
+    # time.sleep()
 
     # Send outputs to the SITL/ArduPilot
     udp_socket.sendto(bytes(JSON_string, "ascii"), address)
 
     # Track performance
-    if frame_count % print_frame_count == 0:
-        now = time.time()
-        step_time = now - frame_time
-        print("fps=%.2f  timestamp=%.3f dt=%.3f" % (print_frame_count/step_time, physics_time_s, step_time))
-        frame_time = now
+    now = time.time()
+    step_time = now - frame_time
+    # print("fps=%.2f  timestamp=%.3f dt=%.3f" % (print_frame_count/step_time, physics_time_s, step_time))
+    frame_time = now

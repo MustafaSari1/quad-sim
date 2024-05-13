@@ -9,6 +9,7 @@ class QuadCopter:
 
         # Orientation (Euler angles) (radians)
         self.phi, self.theta, self.psi = 0.0, 0.0, 0.0
+        np.degrees([self.phi, self.theta, self.psi])
 
         # Linear velocity (m/s)
         self.vx, self.vy, self.vz = 0.0, 0.0, 0.0
@@ -46,18 +47,18 @@ class QuadCopter:
         self.vx, self.vy, self.vz = 0, 0, 0
         self.p, self.q, self.r = 0, 0, 0
 
-    def step(self, velocities):
-        self.w1 = velocities[0]
-        self.w2 = velocities[1]
-        self.w3 = -velocities[2]
-        self.w4 = -velocities[3]
+    def step(self, velocities, step_time):
+        self.w1 = velocities[2]
+        self.w2 = velocities[0]
+        self.w3 = velocities[3]
+        self.w4 = velocities[1]
 
         self.update_thrust_torque()
         self.update_rotation_matrix()
         self.update_transformation_matrix()
         self.update_accelerations()
-        self.update_velocities()
-        self.update_position_orientation()
+        self.update_velocities(step_time)
+        self.update_position_orientation(step_time)
 
         return self.angular_velocity, self.linear_acceleration, self.linear_position, self.angular_position, self.linear_velocity
     
@@ -73,9 +74,9 @@ class QuadCopter:
 
         self.torque = np.array(
             [
-                L * K * (-self.w1**2 + self.w3**2),
-                L * K * (-self.w2**2 + self.w4**2),
-                B * (-self.w1**2 + self.w2**2 - self.w3**2 + self.w4**2)
+                L * K * -(self.w2**2 - self.w4**2),
+                L * K * (self.w1**2 - self.w3**2),
+                B * -(self.w1**2 - self.w2**2 + self.w3**2 - self.w4**2)
             ],
             dtype=float
         ).reshape(3, 1)
@@ -103,30 +104,37 @@ class QuadCopter:
     def update_accelerations(self):
         # Linear acceleration (m/s^2)
         self.linear_acceleration = (self.R @ self.thrust)/MASS_KG
-        self.linear_acceleration += np.array([0.0, 0.0, GRAVITY_M_S2], dtype=float).reshape(3, 1)
-
-        if self.on_ground() and self.linear_acceleration[2] > 0:
-            self.linear_acceleration[2] = 0
+        self.linear_acceleration += np.array([0.0, 0.0, -GRAVITY_M_S2], dtype=float).reshape(3, 1)
 
         # Angular acceleration (rad/s^2)
-        self.angular_acceleration = np.dot(self.I_inverse, self.torque)
+        self.angular_acceleration[0] = self.torque[0]/IXX
+        self.angular_acceleration[1] = self.torque[1]/IYY
+        self.angular_acceleration[2] = self.torque[2]/IZZ
     
-    def update_velocities(self):
-        # Linear velocity (m/s)
-        self.linear_velocity += (self.linear_acceleration * DT)
-        self.vx, self.vy, self.vz = self.linear_velocity
+    def update_velocities(self, dt):
 
-        # Angular velocity (rad/s)
-        self.angular_velocity += self.W @ (self.angular_acceleration * DT)
+        # Tepki kuvveti
+        if(self.on_ground()):
+            if (self.linear_acceleration[2] <= 0):
+                self.linear_acceleration[2] = 0
+
+        # Linear velocity (m/s)
+        self.linear_velocity += (self.linear_acceleration * dt)
+
+        # print(self.linear_velocity)
+
+        self.vx, self.vy, self.vz = self.linear_velocity
+        # Angular velocity (rad/s) body frame
+        self.angular_velocity += self.angular_acceleration * dt
         self.p, self.q, self.r = self.angular_velocity
 
-    def update_position_orientation(self):
+    def update_position_orientation(self, dt):
         # Linear Position (m)
-        self.linear_position += self.linear_velocity * DT
+        self.linear_position += self.linear_velocity * dt
         self.x, self.y, self.z = self.linear_position
 
-        # Angular Position (radians)
-        self.angular_position += self.angular_velocity * DT
+        # Angular Position (radians) body frame
+        self.angular_position += self.angular_velocity * dt
         self.phi, self.theta, self.psi = self.angular_position
 
     def on_ground(self):
