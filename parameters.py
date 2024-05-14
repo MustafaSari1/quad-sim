@@ -11,7 +11,7 @@ IYY = 1
 IZZ = 1
 
 K = 1e-5 # Thrust constants
-A = 1e-3 
+A = 0.5 
 B = 1e-6 # Drag constant 
 L = 1 # Arm length (m)
 

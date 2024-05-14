@@ -90,12 +90,22 @@ class QuadCopter:
             dtype=float
         ).reshape(3, 1)
 
+    # def update_rotation_matrix(self):
+    #     self.R = np.array(
+    #         [
+    #             c(self.phi) * c(self.psi) - c(self.theta) * s(self.phi) * s(self.psi), -c(self.psi) * s(self.phi) - c(self.phi) * c(self.theta) * s(self.psi), s(self.theta) * s(self.psi),
+    #             c(self.theta) * c(self.psi) * s(self.phi) + c(self.phi) * s(self.psi), c(self.phi) * c(self.theta) + c(self.psi) - s(self.phi) * s(self.psi), -c(self.psi) * s(self.theta),
+    #             s(self.phi) * s(self.theta), c(self.phi) * s(self.theta), c(self.theta)
+    #         ],
+    #         dtype=float
+    #     ).reshape(3, 3)
+
     def update_rotation_matrix(self):
         self.R = np.array(
             [
-                c(self.phi) * c(self.psi) - c(self.theta) * s(self.phi) * s(self.psi), -c(self.psi) * s(self.phi) - c(self.phi) * c(self.theta) * s(self.psi), s(self.theta) * s(self.psi),
-                c(self.theta) * c(self.psi) * s(self.phi) + c(self.phi) * s(self.psi), c(self.phi) * c(self.theta) + c(self.psi) - s(self.phi) * s(self.psi), -c(self.psi) * s(self.theta),
-                s(self.phi) * s(self.theta), c(self.phi) * s(self.theta), c(self.theta)
+                c(self.psi) * c(self.theta), c(self.psi) * s(self.theta) * s(self.phi) - s(self.psi) * c(self.phi), c(self.psi) * s(self.theta) * c(self.phi) + s(self.psi) * s(self.theta),
+                s(self.psi) * c(self.theta), s(self.psi) * s(self.theta) * s(self.phi) + c(self.psi) * c(self.phi), s(self.psi) * s(self.theta) * c(self.phi) - c(self.psi) * s(self.phi),
+                -s(self.theta), c(self.theta) * s(self.phi), c(self.theta) * c(self.phi)
             ],
             dtype=float
         ).reshape(3, 3)
@@ -114,6 +124,10 @@ class QuadCopter:
         # Linear acceleration (m/s^2)
         self.linear_acceleration = (self.R @ self.thrust)/MASS_KG
         self.linear_acceleration += np.array([0.0, 0.0, -GRAVITY_M_S2], dtype=float).reshape(3, 1)
+
+        self.linear_acceleration[0] = 0
+        self.linear_acceleration[1] = 0
+
 
         # Angular acceleration (rad/s^2)
         self.angular_acceleration[0] = self.torque[0]/IXX
@@ -145,13 +159,7 @@ class QuadCopter:
 
         self.vx, self.vy, self.vz = self.linear_velocity
         # Angular velocity (rad/s) body frame
-        # self.angular_velocity += self.angular_acceleration * dt
-        phidot = self.angular_acceleration[0] * dt
-        thetadot = self.angular_acceleration[1] * dt
-        psidot = self.angular_acceleration[2] * dt
-        self.angular_velocity[0] = phidot - psidot * s(self.theta)
-        self.angular_velocity[1] = c(self.phi) * thetadot + s(self.phi) * psidot * c(self.theta)
-        self.angular_velocity[2] = c(self.phi) * psidot * c(self.theta) - s(self.phi) * thetadot
+        self.angular_velocity += self.angular_acceleration * dt
 
     def update_position_orientation(self, dt):
         # Linear Position (m)

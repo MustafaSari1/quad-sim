@@ -60,7 +60,7 @@ while True:
 
     try:
         # Receive data from the SITL
-        data, address = udp_socket.recvfrom(100)
+        data, address = udp_socket.recvfrom(1024)
     except socket.timeout:
         print('No data received')
         continue
