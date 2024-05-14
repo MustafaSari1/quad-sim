@@ -6,10 +6,16 @@ GRAVITY_M_S2 = 9.81
 # Quadcopter parameters
 MASS_KG = 10
 
-IXX = 10
-IYY = 10
-IZZ = 10
+IXX = 1
+IYY = 1
+IZZ = 1
 
 K = 1e-5 # Thrust constants
-L = 0.15 # Arm length (m)
+A = 1e-3 
 B = 1e-6 # Drag constant 
+L = 1 # Arm length (m)
+
+DEBUG_PWM = True
+DEBUG_JSON = True
+DEBUG_ANGULAR_ACCEL = True
+DEBUG_PERIOD_MS = 500

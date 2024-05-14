@@ -19,16 +19,19 @@ def init():
     global quad
     quad.__reset__()
 
+
 # Calculate the new state of the physics
 # Return timestamp, gyro(angular vel), accel, position, attitude, velocity
 def calculate_new_state(pwm_values):
+
     global step_time
     global time_now
     time_now += DT
 
     rotor_velocities = pwm_values[0:4]
 
-    print(rotor_velocities)
+    if DEBUG_PWM and DEBUG_TIME:
+        print(rotor_velocities)
     gyro_body_rad_s, accel_body_m_ss, position_m, attitude_rad, velocity_m_s = quad.step(rotor_velocities, step_time)
     
     return time_now, gyro_body_rad_s, accel_body_m_ss, position_m, attitude_rad, velocity_m_s
@@ -50,6 +53,11 @@ parse_format = 'HHI16H'
 magic_value = 18458
 
 while True:
+    if (time.time() * 1000) % DEBUG_PERIOD_MS < 1:
+        DEBUG_TIME = True
+    else:
+        DEBUG_TIME = False
+
     try:
         # Receive data from the SITL
         data, address = udp_socket.recvfrom(100)
@@ -119,7 +127,8 @@ while True:
     }
 
     JSON_string = "\n" + json.dumps(JSON_format, separators=(',', ':')) + "\n"
-    print(JSON_string)
+    if DEBUG_JSON and DEBUG_TIME:
+        print(JSON_string)
     # time.sleep()
 
     # Send outputs to the SITL/ArduPilot
