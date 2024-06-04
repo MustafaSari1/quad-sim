@@ -101,14 +101,34 @@ class QuadCopter:
     #     ).reshape(3, 3)
 
     def update_rotation_matrix(self):
-        self.R = np.array(
+        self.R_phi = np.array(
             [
-                c(self.psi) * c(self.theta), c(self.psi) * s(self.theta) * s(self.phi) - s(self.psi) * c(self.phi), c(self.psi) * s(self.theta) * c(self.phi) + s(self.psi) * s(self.theta),
-                s(self.psi) * c(self.theta), s(self.psi) * s(self.theta) * s(self.phi) + c(self.psi) * c(self.phi), s(self.psi) * s(self.theta) * c(self.phi) - c(self.psi) * s(self.phi),
-                -s(self.theta), c(self.theta) * s(self.phi), c(self.theta) * c(self.phi)
+                [1, 0, 0],
+                [0, c(self.phi), s(self.phi)],
+                [0, -s(self.phi), c(self.phi)]
             ],
             dtype=float
-        ).reshape(3, 3)
+        )
+
+        self.R_theta = np.array(
+            [
+                [c(self.theta), 0, -s(self.theta)],
+                [0, 1, 0],
+                [s(self.theta), 0,  c(self.theta)]
+            ],
+            dtype=float
+        )
+
+        self.R_psi = np.array(
+            [
+                [c(self.psi), s(self.psi), 0],
+                [-s(self.psi), c(self.psi), 0],
+                [0, 0, 1]
+            ],
+            dtype=float
+        )
+
+        self.R = self.R_phi @ self.R_theta @ self.R_psi
 
     def update_transformation_matrix(self):
         self.W = np.array(
@@ -125,8 +145,8 @@ class QuadCopter:
         self.linear_acceleration = (self.R @ self.thrust)/MASS_KG
         self.linear_acceleration += np.array([0.0, 0.0, -GRAVITY_M_S2], dtype=float).reshape(3, 1)
 
-        self.linear_acceleration[0] = 0
-        self.linear_acceleration[1] = 0
+        # self.linear_acceleration[0] = 0
+        # self.linear_acceleration[1] = 0
 
 
         # Angular acceleration (rad/s^2)
